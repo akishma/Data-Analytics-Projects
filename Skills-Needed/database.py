@@ -34,3 +34,8 @@ def loop(statement, columns, values,delimiter='"',condition='='):
         
 #    print (statement)
     return statement
+
+def to_df(table):
+    connection=connector.connect()
+    return pd.read_sql('SELECT * FROM '+ table, connection )
+
