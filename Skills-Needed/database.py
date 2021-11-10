@@ -38,6 +38,25 @@ def loop(statement, columns, values,delimiter='"',condition='='):
 def to_df(table):
     return pd.read_sql('SELECT * FROM '+ table, connection )
 
+def insert (table,columns,values):
+    statement="INSERT INTO "+table+" ("+columns[0]
+    if len(columns)>1:
+        columns.pop(0) 
+        for column in columns:
+            statement=statement+", "+column
+        
+    statement=statement+' ) VALUES ("' +values[0]+'"'
+    if len(values)>1:
+        values.pop(0) 
+        for value in values:
+            statement=statement+', "'+str(value)+'"'
+        
+    statement=statement+ ")"
+    print (statement)    
+    cursor=connection.cursor()
+    cursor.execute(statement)
+    connection.commit()
+    return cursor.lastrowid
 
 
     
