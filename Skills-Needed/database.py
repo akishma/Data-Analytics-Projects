@@ -3,20 +3,20 @@ import connector
 import pandas as pd
 
 
+connection=connector.connect()   
+
 # Select from table Where and condition
 def get(table, selector="*",columns=False,values=False, condition='=', delimiter='"'):
-    connection=connector.connect()
     statement='SELECT '+selector+' FROM '+table
     if columns:
         statement=loop(statement, columns, values,delimiter,condition,)
         
-#    print(statement)    
+    print(statement)    
     return pd.read_sql(statement, connection )
 
 
 # Select from table where in condition
 def get_in(table, selector, column, values_list):
-    connection=connector.connect()
     values_str=', '.join([str(elem) for elem in values_list])
     statement='SELECT '+selector+' FROM '+table+' WHERE '+column+' IN ('+values_str+' )' 
 
@@ -36,6 +36,8 @@ def loop(statement, columns, values,delimiter='"',condition='='):
     return statement
 
 def to_df(table):
-    connection=connector.connect()
     return pd.read_sql('SELECT * FROM '+ table, connection )
 
+
+
+    
