@@ -45,10 +45,9 @@ def extract_description(source_code):
     soup=BeautifulSoup(source_code, 'html.parser')
     description=soup.find('div', class_='jobsearch-JobComponent-description')
     if description:
-        return description.get_text(separator=' '),'Fine'
-    else:
-        body=soup.find('body')
-        return description, body.get_text() 
+        return description.get_text(separator=' ')
+    else:        
+        return False
 
 
 def extract_degrees(source_code):

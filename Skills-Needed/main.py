@@ -35,42 +35,60 @@ def get_job_count_by_titles():
     
     return titles
 
-
-def extract_requirements(ids_for_extracts):
-    requirements= pd.read_csv (settings.path_analitics+'requirements.csv')            
-    for id in ids_for_extracts:
-        print(id)
-        with open(settings.path_jobs+str(id)+'.html', 'r', encoding='utf-8') as HtmlFile:
+# Obtain requirements from HTML files associated with specific job IDs. 
+#Input array of IDs. Output updated CSV file with requirements and job IDs.
+def extract_requirements(job_id):
+    requirements= pd.read_csv (settings.path_analitics+'requirements.csv')
+    with open(settings.path_jobs+str(job_id)+'.html', 'r', encoding='utf-8') as HtmlFile:
             source_code = HtmlFile.read()
-            job_requirements=parse_html.extract_requirements(source_code,id)
+            job_requirements=parse_html.extract_requirements(source_code,job_id)
             requirements=requirements.append(job_requirements,ignore_index=True)
             print(job_requirements)
             print('_______________________________')
-            jobs_meta_check=database.get('jobs_meta','job_id',['job_id'],[id])    
+            jobs_meta_check=database.get('jobs_meta','job_id',['job_id'],[job_id])    
             if len(jobs_meta_check)<1:
                 if len(job_requirements)>0:                                                    
-                    database.insert('jobs_meta', ['job_id','requirements_list'], [id,1])             
+                    database.insert('jobs_meta', ['job_id','requirements_list'], [job_id,1])             
                     
                 else:                
-                    database.insert('jobs_meta', ['job_id','requirements_list'], [id,0])
+                    database.insert('jobs_meta', ['job_id','requirements_list'], [job_id,0])
                 
             HtmlFile.close()    
     requirements.to_csv(settings.path_analitics+"requirements.csv",index=False)       
-    return 
+    return
 
-def extract_description():
-    print('hey')
+    
+
+def log_error(job_id, function, details=False):
+    log= pd.read_csv ('errors.csv')
+    log=log.append({'job_id':job_id, 'function':function, 'details':details})
+    log= log.to_csv ('errors.csv')
     
     
     
-def extract_info_from_html(full_updating=False):
+def extract_description(job_id):           
+        HtmlFile = open(settings.path_jobs+ str(job_id)+'.html', 'r', encoding='utf-8')    
+        description=parse_html.extract_description(HtmlFile)
+        if description:
+                description=text_preprocess.full_clean(description)
+                database.update('jobs',['clean_description'],[description],['Id'],[job_id])
+        else:                
+            log_error(job_id, 'main.extract_description', 'no description')
+            
+        HtmlFile.close()
+        return description   
+    
+    
+    
+def extract_info_from_html():
     files=os.listdir(settings.path_jobs)
     files_ids=[text_preprocess.extract_id(item) for item in files]
     existing_ids=database.get('jobs','Id',['description'],['IS NOT NULL'],'',delimiter='')
-    ids_for_extracts=[x for x in files_ids if int(x) not in existing_ids['Id'] ]
-    extract_requirements(ids_for_extracts)
-#    extract_description()    
-#    extract_requirements()
-    return ids_for_extracts
+    ids_for_extraction=[x for x in files_ids if int(x) not in existing_ids['Id'] ]
+    for id in ids_for_extraction:
+    #    extract_requirements(id)
+        extract_description(id)    
+    
+    return ids_for_extraction
 
 t=extract_info_from_html()
