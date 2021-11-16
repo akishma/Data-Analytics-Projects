@@ -2,17 +2,16 @@
 
 import database
 import settings
-import os
 import text_preprocess
 import pandas as pd
-import parse_html
+
 
 
 #Returns Data Frame containing jobs associated with specific job title id.
 #Colomns:'Id', 'Posting_date', 'Title', 'Company', 'Address', 'jk', 'description', 'lem_description', 'clean_description'
-def get_data(title_id):
+def get_data(title_id, column='*'):
     jobs_id=database.get('jobs_per_titles','job_id',['title_id'],[title_id])        
-    return database.get_in('jobs', '*', 'Id', jobs_id['job_id'] )
+    return database.get_in('jobs', column, 'Id', jobs_id['job_id'] )
 
 
 # Returns string name associated with title id 
@@ -35,60 +34,36 @@ def get_job_count_by_titles():
     
     return titles
 
-# Obtain requirements from HTML files associated with specific job IDs. 
-#Input array of IDs. Output updated CSV file with requirements and job IDs.
-def extract_requirements(job_id):
+#Prepares a CSV file containing the requirements for a particular job title
+#Imput Title Id INT; Output CSV file  
+def create_requirements_by_title(title_id):
+    title=text_preprocess.url_fitting(get_job_title(title_id))
+    jobs_ids=get_data(title_id,'Id')['Id']
+    print('Creating requerements outlook for '+title)
     requirements= pd.read_csv (settings.path_analitics+'requirements.csv')
-    with open(settings.path_jobs+str(job_id)+'.html', 'r', encoding='utf-8') as HtmlFile:
-            source_code = HtmlFile.read()
-            job_requirements=parse_html.extract_requirements(source_code,job_id)
-            requirements=requirements.append(job_requirements,ignore_index=True)
-            print(job_requirements)
-            print('_______________________________')
-            jobs_meta_check=database.get('jobs_meta','job_id',['job_id'],[job_id])    
-            if len(jobs_meta_check)<1:
-                if len(job_requirements)>0:                                                    
-                    database.insert('jobs_meta', ['job_id','requirements_list'], [job_id,1])             
-                    
-                else:                
-                    database.insert('jobs_meta', ['job_id','requirements_list'], [job_id,0])
-                
-            HtmlFile.close()    
-    requirements.to_csv(settings.path_analitics+"requirements.csv",index=False)       
-    return
+    requirements=requirements[(requirements['job_id'].isin(jobs_ids)) &(requirements['requirement'].notnull()) ]
+    num=len(requirements)
+    
+    requirements['requirement']=[text_preprocess.full_clean(text) for text in requirements['requirement']]
+    requirements['requirement']=[text_preprocess.remove_unuseful(text) for text in requirements['requirement']]
+    requirements['lowcase']=[text_preprocess.charts_clean(text) for text in requirements['requirement'].str.lower() ]   
+    requirements['lem']=[text_preprocess.lemmitization(text) for text in requirements['requirement'].str.lower()]    
+    
+    grouped_count=requirements.groupby('lem', as_index=False).count()[['lem','job_id']]
+    grouped_first=requirements.groupby('lem', as_index=False).first()[['requirement','lem','lowcase']]   
+    grouped_requirements=pd.merge(grouped_count, grouped_first, on="lem")
+    grouped_requirements=grouped_requirements.rename(columns={"job_id": "count"})
+    
+    grouped_requirements['count_percentage']=(100*grouped_requirements['count'] ) /num
+    grouped_requirements=grouped_requirements.replace("", float("NaN"))
+    grouped_requirements=grouped_requirements.dropna(axis=0,  how='any')
+    
+    grouped_requirements=grouped_requirements.sort_values(by=['count_percentage'], ascending=False)    
+    grouped_requirements.to_csv(settings.path_analitics+title+"_grouped_requirements.csv")  
+    
+    return requirements
 
-    
 
-def log_error(job_id, function, details=False):
-    log= pd.read_csv ('errors.csv')
-    log=log.append({'job_id':job_id, 'function':function, 'details':details})
-    log= log.to_csv ('errors.csv')
-    
-    
-    
-def extract_description(job_id):           
-        HtmlFile = open(settings.path_jobs+ str(job_id)+'.html', 'r', encoding='utf-8')    
-        description=parse_html.extract_description(HtmlFile)
-        if description:
-                description=text_preprocess.full_clean(description)
-                database.update('jobs',['clean_description'],[description],['Id'],[job_id])
-        else:                
-            log_error(job_id, 'main.extract_description', 'no description')
-            
-        HtmlFile.close()
-        return description   
-    
-    
-    
-def extract_info_from_html():
-    files=os.listdir(settings.path_jobs)
-    files_ids=[text_preprocess.extract_id(item) for item in files]
-    existing_ids=database.get('jobs','Id',['description'],['IS NOT NULL'],'',delimiter='')
-    ids_for_extraction=[x for x in files_ids if int(x) not in existing_ids['Id'] ]
-    for id in ids_for_extraction:
-    #    extract_requirements(id)
-        extract_description(id)    
-    
-    return ids_for_extraction
 
-t=extract_info_from_html()
+
+create_requirements_by_title(get_job_count_by_titles()['Id'])

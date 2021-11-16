@@ -68,8 +68,7 @@ def extract_requirements(source_code,job_id):
         qualifications_points=qualifications_list.find_all('li')
         for point in qualifications_points:
             string=point.get_text(separator=' ')
-            cleaned=text_preprocess.full_clean(string)
-            print(job_id)
+            cleaned=text_preprocess.full_clean(string)            
             print(cleaned)
             qualifications=qualifications.append({'job_id':job_id,'requirement':cleaned},ignore_index=True)
    

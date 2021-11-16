@@ -11,7 +11,7 @@ def get(table, selector="*",columns=False,values=False, condition='=', delimiter
     if columns:
         statement=loop(statement, columns, values,delimiter,condition,)
         
-    print(statement)    
+#    print(statement)    
     return pd.read_sql(statement, connection )
 
 
@@ -57,6 +57,23 @@ def insert (table,columns,values):
     cursor.execute(statement)
     connection.commit()
     return cursor.lastrowid
+
+
+def update(table,columns_update,values_update,columns_cond,values_cond):    
+    statement='UPDATE '+table+' SET '+columns_update[0]+'="'+str(values_update[0])+'"'
+    num=len(columns_update)
+    if len(columns_update)>1:
+        columns_update.pop(0)
+        values_update.pop(0)
+        for i in range(num-1):        
+            statement=statement+" , "+columns_update[i]+"='"+values_update[i]+"'"
+        
+    
+    statement=loop(statement, columns_cond, values_cond)
+#    print(statement)
+    cursor=connection.cursor()     
+    cursor.execute(statement)
+    connection.commit()
 
 
     
