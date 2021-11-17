@@ -5,7 +5,7 @@ import settings
 import text_preprocess
 import pandas as pd
 from os.path import exists
-
+import visualization
 
 
 #Returns Data Frame containing jobs associated with specific job title id.
@@ -66,7 +66,8 @@ def create_requirements_by_title(title_id):
 
 
 
-
+# Identifying job requirements from a job description
+# Input Title id INT; Output two CSV files containing the number of times each requirement is mentioned in the job description
 def search_for_requerements_in_descriptions(title_id):
     jobs=get_data(title_id)
     title=text_preprocess.url_fitting(get_job_title(title_id))
@@ -97,6 +98,8 @@ def search_for_requerements_in_descriptions(title_id):
     jobs.to_csv(settings.path_analitics+title+"_jobs_found.csv",index=False )
     return  requirements 
 
-data_titles=[1,2,3]
-for title_id in data_titles:
-    search_for_requerements_in_descriptions(title_id)    
+data_titles_ids=[1,2,3]
+visualization.education_bars([text_preprocess.url_fitting(get_job_title(title_id)) for title_id in data_titles_ids])
+#for title_id in data_titles:
+#    visualization.education_bars( text_preprocess.url_fitting(get_job_title(title_id)))
+    #search_for_requerements_in_descriptions(title_id)    
