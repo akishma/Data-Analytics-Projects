@@ -4,6 +4,7 @@ import database
 import settings
 import text_preprocess
 import pandas as pd
+from os.path import exists
 
 
 
@@ -36,7 +37,7 @@ def get_job_count_by_titles():
 
 #Prepares a CSV file containing the requirements for a particular job title
 #Imput Title Id INT; Output CSV file  
-def create_requirements_by_title(title_id):
+def create_requirements_by_title(title_id):    
     title=text_preprocess.url_fitting(get_job_title(title_id))
     jobs_ids=get_data(title_id,'Id')['Id']
     print('Creating requerements outlook for '+title)
@@ -59,11 +60,43 @@ def create_requirements_by_title(title_id):
     grouped_requirements=grouped_requirements.dropna(axis=0,  how='any')
     
     grouped_requirements=grouped_requirements.sort_values(by=['count_percentage'], ascending=False)    
-    grouped_requirements.to_csv(settings.path_analitics+title+"_grouped_requirements.csv")  
+    grouped_requirements.to_csv(settings.path_analitics+title+"_grouped_requirements.csv",index=False)  
     
-    return requirements
+    return grouped_requirements
 
 
 
 
-create_requirements_by_title(get_job_count_by_titles()['Id'])
+def search_for_requerements_in_descriptions(title_id):
+    jobs=get_data(title_id)
+    title=text_preprocess.url_fitting(get_job_title(title_id))
+    jobs=jobs[jobs['cleared']==1]
+    jobs["clean_description"]=[' '+text_preprocess.charts_clean(text)+' ' for text in jobs["clean_description"]]
+    if exists(settings.path_analitics+title+"_grouped_requirements.csv"):     
+        requirements= pd.read_csv(settings.path_analitics+title+"_grouped_requirements.csv")  
+    else:
+        requirements=create_requirements_by_title(title_id)
+    
+    requirements=requirements[requirements['count']>1]
+    jobs['requirements']=0     
+    i=0
+    for requirement in requirements['lowcase']:
+        i=i+1        
+        requirement=' '+requirement+' '
+        found=jobs["clean_description"].str.find(requirement)
+        found=found.apply(lambda x: 0 if x <0 else 1)
+        if found.sum()>0:
+            jobs['requirements']=jobs['requirements']+found        
+            jobs[requirement.strip()]=found
+            
+        requirements.loc[requirements['lowcase']==requirement.strip(), 'in_description']=len(found.drop(labels=found[found<1].index.values)) 
+
+    num_of_jobs=len(jobs)    
+    requirements['ratio_in_description']=requirements['in_description']/num_of_jobs
+    requirements.to_csv(settings.path_analitics+title+"_grouped_requirements.csv",index=False)
+    jobs.to_csv(settings.path_analitics+title+"_jobs_found.csv",index=False )
+    return  requirements 
+
+data_titles=[1,2,3]
+for title_id in data_titles:
+    search_for_requerements_in_descriptions(title_id)    

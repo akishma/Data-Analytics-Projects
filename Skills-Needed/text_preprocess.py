@@ -65,8 +65,7 @@ def full_clean(text):
     lst_text = text.split()    
     lst_text =remove_stop_words(lst_text)    
     text = " ".join(lst_text)
-    text=text.strip()
-    text=text.lower()    
+    text=text.strip()        
     return replace(text)
 
 def charts_clean(text):
