@@ -48,7 +48,7 @@ def create_requirements_by_title(title_id):
     requirements['requirement']=[text_preprocess.full_clean(text) for text in requirements['requirement']]
     requirements['requirement']=[text_preprocess.remove_unuseful(text) for text in requirements['requirement']]
     requirements['lowcase']=[text_preprocess.charts_clean(text) for text in requirements['requirement'].str.lower() ]   
-    requirements['lem']=[text_preprocess.lemmitization(text) for text in requirements['requirement'].str.lower()]    
+    requirements['lem']=[text_preprocess.lemmitization(text) for text in requirements['lowcase']]    
     
     grouped_count=requirements.groupby('lem', as_index=False).count()[['lem','job_id']]
     grouped_first=requirements.groupby('lem', as_index=False).first()[['requirement','lem','lowcase']]   
@@ -99,7 +99,8 @@ def search_for_requerements_in_descriptions(title_id):
     return  requirements 
 
 data_titles_ids=[1,2,3]
-visualization.education_bars([text_preprocess.url_fitting(get_job_title(title_id)) for title_id in data_titles_ids])
-#for title_id in data_titles:
-#    visualization.education_bars( text_preprocess.url_fitting(get_job_title(title_id)))
-    #search_for_requerements_in_descriptions(title_id)    
+
+search_for_requerements_in_descriptions(2)
+#visualization.education_bars([text_preprocess.url_fitting(get_job_title(title_id)) for title_id in data_titles_ids])
+visualization.create_barplot(get_job_title(2))
+   

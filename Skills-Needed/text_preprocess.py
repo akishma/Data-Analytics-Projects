@@ -3,10 +3,12 @@
 import re
 from nltk.stem import WordNetLemmatizer
 import nltk
+from nltk.corpus import wordnet
+from nltk.stem import PorterStemmer
 
-#from nltk.corpus import wordnet as wn
-from textblob import Word
+stemmer = PorterStemmer()
 
+#nltk.download('averaged_perceptron_tagger')
 
 lst_stopwords=nltk.corpus.stopwords.words("english")
 
@@ -77,10 +79,20 @@ def replace(text):
      for words in words_replace:
          text= text.replace(' '+words+" "," "+words_replace[words]+' ')
      return text    
+
+
+def get_wordnet_pos(word):    
+    tag = nltk.pos_tag([word])[0][1][0].upper()
+    tag_dict = {"J": wordnet.ADJ,
+                "N": wordnet.NOUN,
+                "V": wordnet.VERB,
+                "R": wordnet.ADV}
+
+    return tag_dict.get(tag, wordnet.NOUN)
          
 def lemmitization(text):    
     lst_text=text.split()
-    lst_text = [wordnet_lemmatizer.lemmatize(word) for word in lst_text ]     
+    lst_text = [stemmer.stem(word) if len(word)>3 else word for word in lst_text ] 
     text = " ".join(lst_text)    
     return text.strip()
 
@@ -95,7 +107,8 @@ def test(word):
     word=lemmitization(word)
     print(word)
         
-    
+test('data analyst analytics USA sas engineer engineering science scientist')    
+
 
 
      
