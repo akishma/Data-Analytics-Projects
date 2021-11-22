@@ -79,10 +79,8 @@ def search_for_requerements_in_descriptions(title_id):
         requirements=create_requirements_by_title(title_id)
     
     requirements=requirements[requirements['count']>1]
-    jobs['requirements']=0     
-    i=0
-    for requirement in requirements['lowcase']:
-        i=i+1        
+    jobs['requirements']=0 
+    for requirement in requirements['lowcase']:      
         requirement=' '+requirement+' '
         found=jobs["clean_description"].str.find(requirement)
         found=found.apply(lambda x: 0 if x <0 else 1)
@@ -94,13 +92,14 @@ def search_for_requerements_in_descriptions(title_id):
 
     num_of_jobs=len(jobs)    
     requirements['ratio_in_description']=requirements['in_description']/num_of_jobs
+    
     requirements.to_csv(settings.path_analitics+title+"_grouped_requirements.csv",index=False)
     jobs.to_csv(settings.path_analitics+title+"_jobs_found.csv",index=False )
     return  requirements 
 
 data_titles_ids=[1,2,3]
 
-search_for_requerements_in_descriptions(2)
+#search_for_requerements_in_descriptions(2)
 #visualization.education_bars([text_preprocess.url_fitting(get_job_title(title_id)) for title_id in data_titles_ids])
-visualization.create_barplot(get_job_title(2))
+#visualization.create_barplot(get_job_title(2))
    
